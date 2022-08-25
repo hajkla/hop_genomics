@@ -1,4 +1,4 @@
-##This document details commands used for the SNP calling for two hop genoes against the Cascade reference genome 
+##This document details commands used for the alignments and SNP calling of hop whole genome and DArT sequences against the Cascade Dovetail reference genome 
 
 ## ----------------------0.Download reference genomes---------------------------------------------------------------------------------------
 
