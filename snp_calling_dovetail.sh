@@ -1,4 +1,4 @@
-##This document details commands used for the alignments and SNP calling of hop whole genome and DArT sequences against the Cascade Dovetail reference genome 
+##This document details commands used for the SNP calling for two hop genoes against the Cascade reference genome 
 
 ## ----------------------0.Download reference genomes---------------------------------------------------------------------------------------
 
@@ -10,6 +10,14 @@
 ##DArT sequence reads were moved to project dierectory from /archives/2021_eastmall_general/klara_hajdu_hop_dartseq/hop_dartseq
 
 # Pilgrim and 316/1/16 data was transferred from niab hpc to cropdiversity  
+
+
+
+
+
+# fastQC analysis of DArT untrimmed and trimmed reads
+
+
 
 #--------------------------------------------1. Removing sequencing adapters from DArT raw reads-----------------------------------------------------------------------
 
@@ -304,35 +312,47 @@ bcftools query -e'QUAL="."' -f'%CHROM %POS [%GT] %ID %REF %ALT %QUAL\n' S3_SNP_c
 bcftools view -s S1, S3 cohort_raw_snps.vcf >S1S3_snps_only.vcf  #extracting info from two parents only
 bcftools view -s S1, S3 cohort_raw_snps.vcf >S1S3_indels_only.vcf #extracting info from two parents only
 
-bcftools view -Ou -s sample1,sample2 file.vcf | bcftools query -f %INFO/AC\t%INFO/AN\n
+# example: bcftools view -Ou -s sample1,sample2 file.vcf | bcftools query -f %INFO/AC\t%INFO/AN\n
 
-#10.b filtering using the same criteria as attempted with GATK, this was done in two steps (for no particular reason)
+#10.b  
+#snp filtering using the same criteria as attempted with GATK, this was done in two steps (for no particular reason)
 bcftools filter -O z -o filtered_S1S3.vcf -i '%QUAL>30' S1S3_snps_only.vcf
 bcftools filter -O z -o S1S3_filtered_snps.vcf -i 'QD>3 & SOR<3 &  FS<60 & MQ>40 & ReadPosRankSum>-8 & MQRankSum>-12.5' filtered_S1S3.vcf
 
-#S1S3 snp count:
+#Caveat or rank sum tests
+#The read position and mapping quality rank sum tests can not be calculated for sites without a mixture of reads showing both the reference and alternate alleles. 
+#The Rank Sum Tests require at least one individual to be heterozygous and have a mix of ref and alt reads. 
+#The assumption is in a large cohort, at least one sample will be heterozygous so the annotation can be calculated.
+#filtered for MQ rank sum and RPrank sum , meaning all the sites which had no heterozygous sample were lost. Sitest which the rank sums could be calculated were filtered based on the criteria.
+
+#indel filtering using the same criteria as with GATK
+
+bcftools filter -O z -o filtind.vcf -i '%QUAL>30' S1S3_indels_only.vcf
+bcftools filter -O z -o S1S3_filtered_indels.vcf -i 'QD>2 & FS<200 & ReadPosRankSum>-20,0' filtind.vcf
+
+
+#S1S3 variant count:
+13825668 S1S3.vcf
 12442348 S1S3_snps_only.vcf
-2801646 S1S3_filtered_snps.
+1338315 S1S3_indels_only.vcf
+
+2801646 S1S3_filtered_snps.vcf
+585017 S1S3_filtered_indels.vcf
 
 
+#extracting separate S1 S3 snps for circos keeping vcf format
+#./. low qualit
+bcftools view -e 'GT="./." & GT="0/0"' S1_filtered_snps.vcf > s1variant_hq.vcf
+bcftools view -e 'GT="./." & GT="0/0"' S3_filtered_snps.vcf > s3variant_hq.vcf
 
-#10.c repeat 10b on full cohort
-bcftools filter -O z -o filtered_cohort.vcf -i '%QUAL>30' cohort_raw_snps.vcf
-bcftools filter -O z -o full_cohort_filtered_snps.vcf -i 'QD>3 & SOR<3 &  FS<60 & MQ>40 & ReadPosRankSum>-8 & MQRankSum>-12.5' filtered_cohort.vcf
-vcf
+2738181 s1hq.vcf
+2097416 s1variant_hq.vcf
 
-
-#SNPs and INDELs called from S1 S3    13876239
-#from which SNPs                      12506098
-#from which INDELs                    1370141
-  
-#snps after filtering with bcftools   2812547
-#indels after filtering with bcftools 36311
-#SNP per base after filtering         1061.366063
+2718969 s3hq.vcf
+1708444 s3variant_hq.vcf
 
 
-#extracting separate S1 S3 snps
-
+#extracting a lot of genotype and filtering info
 bcftools query -i 'TYPE="SNP"' -f '%CHROM %POS %REF %ALT GTs:[ %GT] %QUAL %QD %FS %MQ %MQRankSum %ReadPosRankSum\n' S1S3_filtered_snps.vcf > filtered_S1S3_genotypeinfo.txt
 
 #separate filtered SNPs present in S1 and S3
@@ -340,6 +360,15 @@ awk -F' ' '$6 == "./."' filtered_S1S3_genotypeinfo.txt > S3_filtered_snps.txt
 awk -F' ' '$7 == "./."' filtered_S1S3_genotypeinfo.txt > S1_filtered_snps.txt
 awk -F' ' '$7 != "./." && $6 != "./."' filtered_S1S3_genotypeinfo.txt > S1S3_shared_snps.txt
 
+#make files with only snp position info for circos
+more S1_filtered_snps.txt| sed 's/ /\t/g' | grep 'Scaffold' | cut -f 1,2 > S1snps_circos.txt
+more S3_filtered_snps.txt| sed 's/ /\t/g' | grep 'Scaffold' | cut -f 1,2 > S3snps_circos.txt
+more S1S3_shared_snps.txt| sed 's/ /\t/g' | grep 'Scaffold' | cut -f 1,2 > S1S3snps_circos.txt
+
+#duplicate snp position column to make it circos compatible
+awk -F' ' '{print $0" "$2}' S1S3snps_circos.txt > S1S3snps_circos2.txt
+
+#s1s3 stats
 Sample ,S1,S3,Total
 Transitions ,1484970,1349302,2834272
 Transversions ,863688,781742,1645430
@@ -351,6 +380,15 @@ Ts/Tv ,1.719,1.726,1.723
 # square brackets[] to extract from FORMAT field, eg bcftools query -f '%CHROM %POS[\t%GT\t%PL]\n' file.bcf | head -3
 
 
+#filtering of 200 regenotyped dart sequence files
+
+bcftools filter -O z -o filt1.vcf -i '%QUAL>30' dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype.vcf
+bcftools filter -O z -o dart_cohort_filtered_snps.vcf -i 'TYPE="SNP" & QD>3 & SOR<3 &  FS<60 & MQ>40 & ReadPosRankSum>-8 & MQRankSum>-12.5' filt1.vcf
+bcftools filter -O z -o dart_cohort_filtered_snps.vcf -i 'TYPE="INDEL" & QD>2 & FS<200 & ReadPosRankSum>-20' filt1.vcf
+
+#extracting genotype information from newly called dartsnps
+bcftools query -i 'TYPE="SNP"' -f '%CHROM %POS %REF %ALT %FILTER GTs:[ %GT] %QUAL %QD %FS %MQ %MQRankSum %ReadPosRankSum\n' dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype_annotated.vcf > info.tsv
+bcftools query -l dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype_annotated.vcf >dart_ids.tsv
 
 
 ##-------------------------------------------------11. Plot filtering results (R)------------------------------------------------------------------------
@@ -481,7 +519,7 @@ nano $SnpEff/snpEff.config
 #home/khajdu/projects/niab/khajdu/hop/gene_prediction/cascadeDovetail/*.gff3 # makerGenes.gff3 and transcripts.fasta.transdecoder.genomeCentric.gff3 contain the full set of annotations
 
 #1. remove bad lines from maker gene model file (anything that wasn't predicted with maker as these confuse snpEff database building)
-cd projects/niab/khajdu/hop/gene_predictions/cascadeDovetail
+cd projects/niab/khajdu/hop/gene_prediction/cascadeDovetail
 more makerGenes.gff3 | grep '##gff-version 3\|maker' > makerGenes.gff
 
 #2. copy gff files to snpeff folder and merge annotations: 
@@ -506,7 +544,7 @@ java -Xmx4g -jar snpEff.jar build -gff3 -v cascadeDovetailTM -noCheckCds -noChec
 #4.Annotate VCF files (S1S3 only first)
 CurDir=/mnt/shared/scratch/khajdu/apps/snpEff
 cd $CurDir
-for a in $(ls /home/khajdu/projects/niab/khajdu/hop/SNP_calling/haplotype_calls_v3/cohort_filtered/*_filtered_snps.vcf); do # full_cohort_filtered_snps.vcf with 200 DArt and 2 parent files, S1S3_filtered_snps.vcf with only two parents 
+for a in $(ls /home/khajdu/projects/niab/khajdu/hop/SNP_calling/haplotype_calls_v3/cohort_filtered/S1S3_filtered_snps.vcf); do  
     echo $a
     filename=$(basename "$a")
     Prefix=${filename%.vcf}
@@ -518,6 +556,21 @@ for a in $(ls /home/khajdu/projects/niab/khajdu/hop/SNP_calling/haplotype_calls_
     mv snpEff_summary.html $OutDir/snpEff_summary_"$Prefix".html
 done
 
+
+#4.Annotate VCF files (DArT samples next)
+CurDir=/mnt/shared/scratch/khajdu/apps/snpEff
+cd $CurDir
+for a in $(ls /home/khajdu/projects/niab/khajdu/hop/SNP_calling/haplotype_calls_v3/dart_DovetailCohort/*.vcf); do  
+    echo $a
+    filename=$(basename "$a")
+    Prefix=${filename%.vcf}
+    OutDir=$(ls -d /home/khajdu/projects/niab/khajdu/hop/SNP_calling/haplotype_calls_v3/cohort_filtered/snpeffTM/dart_cohort)
+    #mkdir -p $Outdir
+    SnpEff=/mnt/shared/scratch/khajdu/apps/snpEff
+    java -Xmx4g -jar $SnpEff/snpEff.jar -v -ud 0 cascadeDovetailTM $a > $OutDir/"$Prefix"_annotated.vcf
+    mv snpEff_genes.txt $OutDir/snpEff_genes_"$Prefix".txt
+    mv snpEff_summary.html $OutDir/snpEff_summary_"$Prefix".html
+done
 
 #submitted scripts below from the directory where files are located: /projects/hop/SNP_calling/haplotype_calls/cohort 
   ```bash 
@@ -541,9 +594,14 @@ done
 
 
 grep -v '#' | wc -l S1S3_filtered_snps_annotated.vcf
+2801651 
+
+
 
 #extract genic snps from snpeff annotated vcf
 more S1S3_filtered_snps_annotated.vcf | grep -v '#' | grep "PASS" | cut -f 1,2,8,10,11 | sed 's/|/\t/g' | cut -f 1,2,4,5,7 | grep -v "intergenic\|stream" > cohort_filtered_snps_annotated_no_intergenic 
+
+more dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype_annotated.vcf | grep -v '#' | cut -f 1,2,8,10,11 | sed 's/|/\t/g' | cut -f 1,2,4,5,7 > dart_filtered_snps_annotated.tsv 
 
 
 #manipulate snpeff vcf:
