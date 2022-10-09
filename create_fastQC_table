@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+#script to create a table from the QC result data generated before and after read trimming 
+
+
+#ls -l /home/jconnell/projects/niab/johnc/RNA_seq_data/post_QC > file_info
+
+ls -l /home/khajdu/fastqc > file_info                    # this will produce this format: drwxrwxr-x 4 khajdu khajdu   6 Sep  8 17:54 2446998.FASTQ_fastqc
+
+cat file_info | awk '{print $9}' > file_names_f      # 9th element is the actual file
+#cat file_info | awk '{print $9 "-R"}' > file_names_r
+
+sed -i 1d file_names_f
+#sed -i 1d file_names_r
+
+#for file in /home/jconnell/projects/niab/johnc/RNA_seq_data/post_QC/*/*_1_*; do 
+#	cat $file/summary.txt | cut -f1 | paste -s >> result_f
+#done
+
+for file in /home/khajdu/fastqc/*; do 
+	cat $file/summary.txt | cut -f1 | paste -s >> result_f
+done 
+
+for file in /home/khajdu/fastqc/*; do 
+	cat $file/fastqc_data.txt | grep -v '#' | grep -v '>>' | grep 'Sequence' | paste -s >> result_x
+done
+
+#for file in /home/jconnell/projects/niab/johnc/RNA_seq_data/post_QC/*/*_2_*; do 
+#	cat $file/summary.txt | cut -f1 | paste -s >> result_r
+#done 
+
+paste file_names_f result_f > final_result_f
+paste file_names_f result_x > final_result_x
+#paste file_names_r result_r > final_result_r
+
+cat final_result_f >> final_result_x
+sort -k1 -n final_result_x > result_table2.txt
+
+rm file_info
+rm file_names_f
+#rm file_names_r
+rm result_f
+#rm result_r
+rm final_result_f
+#rm final_result_r
+
+grep '^[1-60]'
