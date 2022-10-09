@@ -1,0 +1,51 @@
+for x in $(cat snp_data); do
+cat s3variant_hq.vcf | grep $x >> snp_res
+done 
+
+
+for x in $(cat snp_data); do
+cat oldDArt_poswithalleles.txt | grep $x >> snp_res_dart
+done 
+
+
+73 tc
+172 A>T
+19 C>A
+
+
+lfor x in $(cat S3_snp_vs_dartNEW.txt); do
+cat s3data.txt | grep $x >> snp_dartnewS3S3
+done 
+
+for x in $(cat S3_snp_vs_dartNEW.txt); do
+cat dart_cohort_filtered_snps.vcf | grep $x >> snp_dartNEWvsS3DART
+done 
+
+
+for z in *.zip; do unzip "$z"; done
+
+
+
+
+# bedtools intersect for rampseq amplicon and genome wide snp validation
+#https://bedtools.readthedocs.io/en/latest/content/tools/intersect.html
+
+
+(bedenv) bedtools intersect -wa -wb -a ramplicon.bed -b dartN.bed dartO.bed -sorted -filenames >ramplicons_vs_dartsnps.txt # this is the bedtools oneliner for checking overlapping sequences between an query file -a and target files -b. bed files are just tab delimited text files which contain three columns, 1:chromosome no , 2:start pos, 3:end pos.
+
+(bedenv) sortBed -i dartN.bed > dartNe.bed # this sorts the lines by chromosome (col 1) first and then ascending order of the postions which are in column 2 and 3
+(bedenv) cat -t dartN.bed #checks if the columns are separated with tab which will show up as ^
+(bedenv) awk '{OFS="\t"}{print $0, $NF}' dartO.bed > dartOld.bed #this duplicates the last column in the file
+
+
+# bash oneliener:this selected the lines in which the two first columns were the same in both files and printed the whole line from the first file
+
+awk 'NR==FNR{seen[$1,$2]=1; next} seen[$1,$2]' S1S3_rampseqSNPs.txt s1s3overlap.txt >ramplicon_withSNPs_annotated.txt
+
+
+bedtools intersect -wo -a ramplicon.bed -b ramplicon.bed -sorted -filenames >rampvsramp # this will also write the number of overlaps between these two files, but it didnt work 
+
+#this below gave the results which ramplicon is unique
+bedtools intersect -a ramplicon.bed -b ramplicon.bed -c >ramplicon_uniques.txt
+
+
