@@ -1,0 +1,205 @@
+#rampseq primer pairs by AA with ~10k abundance across the cascade genome selected for preliminary in silico testing of 
+
+38160_9772_55.0_8781_9023_45.0 TCAGCAGAGGCTGAAGACTC GATATATCGCAGCTATAGGG 100 300
+11084_7253_50.0_29195_9975_50.0 TATATCGCAGCTATAGGGGG TTCAGCAGAGGCTGAAGACT 100 300
+11542_6815_60.0-66601_8144_50.0 TCGCAGCTATAGGGGGCGAT AGAGGCTGAAGACTCGTTCA 100 300
+18830_7612_35.0_46424_8016_45.0 CCTTAAAACACTTAGTTCCT CCCATACTTACATCTTGGGA 100 300
+19792_9624_40.0_66531_8440_50.0 TGGGATCCCAAAATAAGGTT ATGAGTACGGAGAGCGTGAA 100 300
+29195_9975_50.0_54833_9189_45.0 TTCAGCAGAGGCTGAAGACT ATATATCGCAGCTATAGGGG 100 300
+
+#run in silico PCR simulation with these primer pairs
+#install ipcress:
+#conda activate -n ipcress
+#ca ipcress
+#conda install -c exonerate #this includes the ipcress package
+
+cd /home/khajdu/projects/niab/khajdu/hop/rampseq
+
+ipcress rampseq_primers.txt --sequence dovetailCascadeFullAssemblyUnmasked.fasta >Dovetail_rampseq_amplicons.txt
+
+#first extract scaffold77 with grep -w "Scaffold_77" A4521709 > scaff77 
+ipcress rampseq_primers.txt --sequence scaff77.fasta >scaff77_rampseq_amplicons.txt
+
+# get ramplicons from each primer pair
+(ipcress) [khajdu@gruffalo rampseq]$ grep -w "11084_7253_50.0_29195_9975_50.0" -A4 Dovetail_rampseq_amplicons.txt > Primer2_Dovetail_rampseq_amplicons.fasta
+(ipcress) [khajdu@gruffalo rampseq]$ grep -w "11542_6815_60.0-66601_8144_50.0" -A4 Dovetail_rampseq_amplicons.txt > Primer3_Dovetail_rampseq_amplicons.fasta
+(ipcress) [khajdu@gruffalo rampseq]$ grep -w "18830_7612_35.0_46424_8016_45.0" -A4 Dovetail_rampseq_amplicons.txt > Primer4_Dovetail_rampseq_amplicons.fasta
+(ipcress) [khajdu@gruffalo rampseq]$ grep -w "19792_9624_40.0_66531_8440_50.0" -A4 Dovetail_rampseq_amplicons.txt > Primer5_Dovetail_rampseq_amplicons.fasta
+(ipcress) [khajdu@gruffalo rampseq]$ grep -w "29195_9975_50.0_54833_9189_45.0" -A4 Dovetail_rampseq_amplicons.txt > Primer6_Dovetail_rampseq_amplicons.fasta
+
+
+2560 amplicons in Scaffold 77 using all 6 primers (450 amplicon/primerset)
+sequences evenly distributed across the scaffold
+need to identify snps in them - could align back against cascade and call snps from it and cohort snp call with two parents but it seems a bit excessive. easier to just find SNPs in them based on vcf positions somehow
+
+
+found 66416 amplicons in the complete Dovetail genome using all 6 primers (11k/primerset)
+
+need to check how many are unique, how many sequencing too similar regions
+how many snps in these amplicons
+
+
+#bedtools for identifying overlapping sequences bedtools intersect for rampseq amplicon and genome wide snp validation
+#https://bedtools.readthedocs.io/en/latest/content/tools/intersect.html
+
+(bedenv) sortBed -i dartN.bed > dartNe.bed # this sorts the lines by chromosome (col 1) first and then ascending order of the postions which are in column 2 and 3
+
+(bedenv) cat -t dartN.bed #checks if the columns are separated with tab which will show up as ^
+
+(bedenv) awk '{OFS="\t"}{print $0, $NF}' dartO.bed > dartOld.bed #this duplicates the last column in the file
+
+(bedenv) bedtools intersect -wa -wb -a ramplicon.bed -b dartN.bed dartO.bed -sorted -filenames >ramplicons_vs_dartsnps.txt # this is the bedtools oneliner for checking overlapping sequences between an query file -a and target files -b. bed files are just tab delimited text files which contain three columns, 1:chromosome no , 2:start pos, 3:end pos.
+
+awk 'NR==FNR{seen[$1,$2]=1; next} seen[$1,$2]' S1S3_rampseqSNPs.txt s1s3overlap.txt >ramplicon_withSNPs_annotated.txt # bash oneliener:this selected the lines in which the two first columns were the same in both files and printed the whole line from the first file
+
+
+#this below gave the results which ramplicon is unique
+bedtools intersect -a ramplicon.bed -b ramplicon.bed -c >ramplicon_uniques.txt
+
+
+#dart SNPs overlap with 66k ramplicons
+
+Scaffold_1533 420767346
+Scaffold_1533 420767346
+Scaffold_172 299930172
+Scaffold_19 246957957
+Scaffold_191 183615866
+Scaffold_73 238666963
+Scaffold_73 289378381
+Scaffold_73 289378381
+Scaffold_73 289378381
+Scaffold_77 36127961
+Scaffold_79 4191450
+Scaffold_79 4191450
+Scaffold_79 4191450
+
+
+# parent SNPs overlap with 66k ramplicons annotated
+
+Scaffold_1533	47671649	intergenic_region	MODIFIER	Q93Y06
+Scaffold_1533	48074731	intergenic_region	MODIFIER	Q8L793
+Scaffold_1533	48610042	intergenic_region	MODIFIER	Q8VZM1
+Scaffold_1533	48610071	intergenic_region	MODIFIER	Q8VZM1
+Scaffold_1533	56709140	intergenic_region	MODIFIER	MAKER0014036-MAKER0014037
+Scaffold_1533	56709166	intergenic_region	MODIFIER	MAKER0014036-MAKER0014037
+Scaffold_1533	76389077	intergenic_region	MODIFIER	MAKER0014123-MAKER0014124
+Scaffold_1533	76389138	intergenic_region	MODIFIER	MAKER0014123-MAKER0014124
+Scaffold_1533	92448726	intergenic_region	MODIFIER	PF04654.13
+Scaffold_1533	97304785	intergenic_region	MODIFIER	Q9C9K1
+Scaffold_1533	97304814	intergenic_region	MODIFIER	Q9C9K1
+Scaffold_1533	134708529	intergenic_region	MODIFIER	O24296
+Scaffold_1533	140732797	intergenic_region	MODIFIER	MAKER0014594-MAKER0014595
+Scaffold_1533	286337821	intergenic_region	MODIFIER	Q9FZ95
+Scaffold_1533	377572554	intergenic_region	MODIFIER	Q9LVM5
+Scaffold_1533	377572555	intergenic_region	MODIFIER	Q9LVM5
+Scaffold_1533	377572582	intergenic_region	MODIFIER	Q9LVM5
+Scaffold_1533	377572689	intergenic_region	MODIFIER	Q9LVM5
+Scaffold_1533	377572693	intergenic_region	MODIFIER	Q9LVM5
+Scaffold_1533	384886443	intergenic_region	MODIFIER	O80505
+Scaffold_19	70448027	intergenic_region	MODIFIER	MAKER0008843-MAKER0008844
+Scaffold_19	139544837	intergenic_region	MODIFIER	MAKER0009502-MAKER0009503
+Scaffold_19	222968704	intergenic_region	MODIFIER	MAKER0010183-MAKER0010184
+Scaffold_19	241305438	intergenic_region	MODIFIER	Q94A41
+Scaffold_19	368214943	intergenic_region	MODIFIER	Q9C952
+Scaffold_19	395694493	intergenic_region	MODIFIER	MAKER0012730-MAKER0012731
+Scaffold_19	395694540	intergenic_region	MODIFIER	MAKER0012730-MAKER0012731
+Scaffold_19	395694637	intergenic_region	MODIFIER	MAKER0012730-MAKER0012731
+Scaffold_19	395694642	intergenic_region	MODIFIER	MAKER0012730-MAKER0012731
+Scaffold_19	420786248	intron_variant	MODIFIER	O80763
+Scaffold_19	420786252	intron_variant	MODIFIER	O80763
+Scaffold_1531	117902585	intergenic_region	MODIFIER	Q39237
+Scaffold_1531	128761534	intron_variant	MODIFIER	Q9LS48
+Scaffold_1531	217787349	intergenic_region	MODIFIER	Q00081
+Scaffold_1531	272902450	intergenic_region	MODIFIER	Q27IK6
+Scaffold_1531	282270198	intergenic_region	MODIFIER	MAKER0004234-MAKER0004235
+Scaffold_1531	282270203	intergenic_region	MODIFIER	MAKER0004234-MAKER0004235
+Scaffold_1531	282270204	intergenic_region	MODIFIER	MAKER0004234-MAKER0004235
+Scaffold_1531	283934326	intergenic_region	MODIFIER	MAKER0004243-MAKER0004244
+Scaffold_1531	283934369	intergenic_region	MODIFIER	MAKER0004243-MAKER0004244
+Scaffold_1531	363108929	intergenic_region	MODIFIER	Q96266
+Scaffold_1531	363959579	intergenic_region	MODIFIER	MAKER0005340-MAKER0005341
+Scaffold_669	64515	intergenic_region	MODIFIER	MAKER0062275-MAKER0062276
+Scaffold_110	792646	intergenic_region	MODIFIER	MAKER0043704-MAKER0043705
+Scaffold_1465	33067	intergenic_region	MODIFIER	MAKER0058547-MAKER0058548
+Scaffold_396	47191	intergenic_region	MODIFIER	MAKER0057712-MAKER0057713
+Scaffold_191	32724539	intergenic_region	MODIFIER	A6P6V9
+Scaffold_191	45010759	intergenic_region	MODIFIER	PF10305.10
+Scaffold_191	61205898	intergenic_region	MODIFIER	F4KBP5
+Scaffold_191	68049060	intergenic_region	MODIFIER	O81123
+Scaffold_191	91270118	intergenic_region	MODIFIER	A2CIR5
+Scaffold_191	104042252	intergenic_region	MODIFIER	Q9C6T1
+Scaffold_191	151928212	intergenic_region	MODIFIER	PF14012.7
+Scaffold_191	162541971	intergenic_region	MODIFIER	Q9SR87
+Scaffold_204	37647	intergenic_region	MODIFIER	MAKER0052662-MAKER0052663
+Scaffold_73	30290064	intergenic_region	MODIFIER	MAKER0032306-MAKER0032307
+Scaffold_73	57621098	intergenic_region	MODIFIER	Q42290
+Scaffold_73	64562119	intergenic_region	MODIFIER	MAKER0032808-MAKER0032809
+Scaffold_73	70857171	intergenic_region	MODIFIER	MAKER0032914-MAKER0032915
+Scaffold_73	122721463	intergenic_region	MODIFIER	PF02873.17
+Scaffold_73	159072068	intergenic_region	MODIFIER	Q93WJ9
+Scaffold_73	166386689	intergenic_region	MODIFIER	MAKER0033998-MAKER0033999
+Scaffold_73	167679045	intergenic_region	MODIFIER	Q9FMF6
+Scaffold_73	174307184	intergenic_region	MODIFIER	Q8L9G7
+Scaffold_73	178665801	intergenic_region	MODIFIER	MAKER0034102-MAKER0034103
+Scaffold_73	185025203	intergenic_region	MODIFIER	MAKER0034166-MAKER0034167
+Scaffold_73	208376858	intergenic_region	MODIFIER	P0CB22
+Scaffold_73	211577987	intergenic_region	MODIFIER	MAKER0034455-MAKER0034456
+Scaffold_73	254685067	intergenic_region	MODIFIER	Q9M5M1
+Scaffold_73	297503814	intergenic_region	MODIFIER	P13853
+Scaffold_77	61294002	intergenic_region	MODIFIER	MSTRG.61464-MAKER0029100
+Scaffold_77	61294003	intergenic_region	MODIFIER	MSTRG.61464-MAKER0029100
+Scaffold_77	80072676	intergenic_region	MODIFIER	Q2N2K0
+Scaffold_77	80072693	intergenic_region	MODIFIER	Q2N2K0
+Scaffold_77	164854620	intergenic_region	MODIFIER	Q9SSE7
+Scaffold_77	164854644	intergenic_region	MODIFIER	Q9SSE7
+Scaffold_77	170168964	intergenic_region	MODIFIER	Q42337
+Scaffold_77	246976631	intergenic_region	MODIFIER	MAKER0030705-MAKER0030706
+Scaffold_77	269007936	intergenic_region	MODIFIER	F4IV99
+Scaffold_77	305045335	intergenic_region	MODIFIER	MAKER0031314-MAKER0031315
+Scaffold_49	92900537	intergenic_region	MODIFIER	F4JRF5
+Scaffold_49	153445043	intergenic_region	MODIFIER	Q8LFR2
+Scaffold_49	153445097	intergenic_region	MODIFIER	Q8LFR2
+Scaffold_49	174630479	intergenic_region	MODIFIER	Q94JW0
+Scaffold_49	179263401	intergenic_region	MODIFIER	Q9LYX1
+Scaffold_49	246188688	intergenic_region	MODIFIER	MSTRG.45445-MAKER0040381
+Scaffold_24	36892443	intergenic_region	MODIFIER	O64700
+Scaffold_24	44059345	intergenic_region	MODIFIER	Q9XJ36
+Scaffold_24	75547340	intergenic_region	MODIFIER	A9YUH4
+Scaffold_24	93547880	intergenic_region	MODIFIER	O23140
+Scaffold_24	171139185	intergenic_region	MODIFIER	Q8VYR9
+Scaffold_24	203686265	intergenic_region	MODIFIER	MAKER0023920-MAKER0023921
+Scaffold_24	223542465	intergenic_region	MODIFIER	MAKER0023978-MAKER0023979
+Scaffold_24	225030303	intergenic_region	MODIFIER	Q94AQ9
+Scaffold_24	228904489	intergenic_region	MODIFIER	Q9ZVH7
+Scaffold_24	228904516	intergenic_region	MODIFIER	Q9ZVH7
+Scaffold_24	228904531	intergenic_region	MODIFIER	Q9ZVH7
+Scaffold_24	230553957	intergenic_region	MODIFIER	Q9FVV7
+Scaffold_24	267654520	intergenic_region	MODIFIER	MAKER0024139-MAKER0024140
+Scaffold_24	267654526	intergenic_region	MODIFIER	MAKER0024139-MAKER0024140
+Scaffold_24	267654610	intergenic_region	MODIFIER	MAKER0024139-MAKER0024140
+Scaffold_24	270276568	intergenic_region	MODIFIER	P35017
+Scaffold_24	300337535	intergenic_region	MODIFIER	PF10358.10
+Scaffold_24	300337555	intergenic_region	MODIFIER	PF10358.10
+Scaffold_24	311552760	intergenic_region	MODIFIER	Q9FF86
+Scaffold_76	37927887	intergenic_region	MODIFIER	MAKER0017918-MAKER0017919
+Scaffold_76	80770029	intergenic_region	MODIFIER	MAKER0018577-MAKER0018578
+Scaffold_76	120556614	intergenic_region	MODIFIER	Q9ZUT3
+Scaffold_76	126619289	intergenic_region	MODIFIER	P51566
+Scaffold_76	138207791	intergenic_region	MODIFIER	B9I2J6
+Scaffold_76	138207797	intergenic_region	MODIFIER	B9I2J6
+Scaffold_76	140469494	intergenic_region	MODIFIER	Q7XTV7
+Scaffold_76	146905484	intergenic_region	MODIFIER	O49429
+Scaffold_76	146905487	intergenic_region	MODIFIER	O49429
+Scaffold_76	198107737	intergenic_region	MODIFIER	MAKER0019673-MAKER0019674
+Scaffold_76	201455735	intergenic_region	MODIFIER	Q9FMC2
+Scaffold_76	245691302	intergenic_region	MODIFIER	Q9LEK8
+Scaffold_76	251253869	intergenic_region	MODIFIER	MAKER0020321-MAKER0020322
+Scaffold_76	251253872	intergenic_region	MODIFIER	MAKER0020321-MAKER0020322
+Scaffold_76	293649673	intergenic_region	MODIFIER	MAKER0020884-MAKER0020885
+Scaffold_76	294422707	intergenic_region	MODIFIER	MAKER0020893-MAKER0020894
+Scaffold_76	339332307	intergenic_region	MODIFIER	F4JRR5
+Scaffold_172	87620783	intergenic_region	MODIFIER	Q9SLN8
+Scaffold_172	173010062	intergenic_region	MODIFIER	O48780
+Scaffold_172	238492051	intergenic_region	MODIFIER	O64481
+
+
