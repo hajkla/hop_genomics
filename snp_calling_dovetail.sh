@@ -44,7 +44,7 @@ for Strain in 2446998 2446999 2447000 2447001 2447002 2447003 2447004 2447005 24
     Outdir=/home/khajdu/projects/niab/khajdu/hop/dartseq/unpaired_reads/"$Strain"
     mkdir -p $Outdir
     ProgDir=/home/khajdu/files/git_repos/scripts/hop_genomics/dna_qc
-    sbatch $ProgDir/count_nucl_unpaired.sh $input 3000 $Outdir #Estimated genome size
+    sbatch $ProgDir/count_nucl_unpaired.sh $input 25 $Outdir #Estimated genome size
   done
 done
 
@@ -318,6 +318,15 @@ bcftools view -s S1, S3 cohort_raw_snps.vcf >S1S3_indels_only.vcf #extracting in
 #snp filtering using the same criteria as attempted with GATK, this was done in two steps (for no particular reason)
 bcftools filter -O z -o filtered_S1S3.vcf -i '%QUAL>30' S1S3_snps_only.vcf
 bcftools filter -O z -o S1S3_filtered_snps.vcf -i 'QD>3 & SOR<3 &  FS<60 & MQ>40 & ReadPosRankSum>-8 & MQRankSum>-12.5' filtered_S1S3.vcf
+bcftools query -i 'TYPE="SNP"' -f '%CHROM %POS %REF %ALT GTs:[ %GT] %QUAL %QD %FS %MQ %MQRankSum %ReadPosRankSum\n' S1S3_filtered_snps.vcf > filtered_S1S3_genotypeinfo.txt
+
+
+# getting SNPs that failed filtering for plotting in R. could figure out how to label snps with fail/pass instead...!
+bcftools filter -O z -o fail_S1S3.vcf -e '%QUAL>30' S1S3_snps_only.vcf
+bcftools filter -O z -o S1S3_fail_snps.vcf -e 'QD>3 & SOR<3 &  FS<60 & MQ>40 & ReadPosRankSum>-8 & MQRankSum>-12.5' fail_S1S3.vcf
+bcftools query -i 'TYPE="SNP"' -f '%CHROM %POS %REF %ALT GTs:[ %GT] %QUAL %QD %FS %MQ %MQRankSum %ReadPosRankSum\n' S1S3_fail_snps.vcf > fail_S1S3_genotypeinfo.txt
+
+
 
 #Caveat or rank sum tests
 #The read position and mapping quality rank sum tests can not be calculated for sites without a mixture of reads showing both the reference and alternate alleles. 
@@ -352,9 +361,6 @@ bcftools view -e 'GT="./." & GT="0/0"' S3_filtered_snps.vcf > s3variant_hq.vcf
 1708444 s3variant_hq.vcf
 
 
-#extracting a lot of genotype and filtering info
-bcftools query -i 'TYPE="SNP"' -f '%CHROM %POS %REF %ALT GTs:[ %GT] %QUAL %QD %FS %MQ %MQRankSum %ReadPosRankSum\n' S1S3_filtered_snps.vcf > filtered_S1S3_genotypeinfo.txt
-
 #separate filtered SNPs present in S1 and S3
 awk -F' ' '$6 == "./."' filtered_S1S3_genotypeinfo.txt > S3_filtered_snps.txt
 awk -F' ' '$7 == "./."' filtered_S1S3_genotypeinfo.txt > S1_filtered_snps.txt
@@ -374,17 +380,28 @@ Transitions ,1484970,1349302,2834272
 Transversions ,863688,781742,1645430
 Ts/Tv ,1.719,1.726,1.723
 
-82679 S1_filtered_snps.txt
-63467 S3_filtered_snps.txt
-2653924 S1S3_shared_snps.txt
+
 # square brackets[] to extract from FORMAT field, eg bcftools query -f '%CHROM %POS[\t%GT\t%PL]\n' file.bcf | head -3
 
 
-#filtering of 200 regenotyped dart sequence files
+
+# variant calling stats of 219 DARt samples
+
+bcftools query -i 'TYPE="SNP"' dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype.vcf > dart219_snps.vcf
+bcftools query -i 'TYPE="INDEL"' dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype.vcf dart219_indels.vcf
+
+11951 dart219_snps.vcf
+2787 dart219_indels.vcf
+
+#filtering of 219 regenotyped dart sequence files
 
 bcftools filter -O z -o filt1.vcf -i '%QUAL>30' dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype.vcf
 bcftools filter -O z -o dart_cohort_filtered_snps.vcf -i 'TYPE="SNP" & QD>3 & SOR<3 &  FS<60 & MQ>40 & ReadPosRankSum>-8 & MQRankSum>-12.5' filt1.vcf
 bcftools filter -O z -o dart_cohort_filtered_snps.vcf -i 'TYPE="INDEL" & QD>2 & FS<200 & ReadPosRankSum>-20' filt1.vcf
+
+
+9895 dart_cohort_filtered.snps.vcf SNPEFF filtered
+1252 dart_cohort_filtered_indels.vcf SNPEFF filtered
 
 #extracting genotype information from newly called dartsnps
 bcftools query -i 'TYPE="SNP"' -f '%CHROM %POS %REF %ALT %FILTER GTs:[ %GT] %QUAL %QD %FS %MQ %MQRankSum %ReadPosRankSum\n' dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype_annotated.vcf > info.tsv
@@ -617,8 +634,6 @@ more dovetailCascadeFullAssemblyUnmaskedDArTcohort_SNPs_genotype_annotated.vcf |
 
 ##Pipeline complete 
 
-
-    
 
 
 
