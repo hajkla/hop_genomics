@@ -1,3 +1,5 @@
+#circos config file used to produce final plot in KH thesis Chapter4.
+
 #CIRCOS CONFIGURATION
 #non optional requirements 
 #1.) Required are Karyotype
@@ -115,6 +117,7 @@ karyotype = /home/khajdu/git_repos/circos/final_karyotype.txt
 
   radius           = 0.90r
   thickness        = 25p
+  #thickness         = 40p
   fill             = yes
   stroke_thickness = 0.5
   stroke_color     = chr6
@@ -130,21 +133,19 @@ karyotype = /home/khajdu/git_repos/circos/final_karyotype.txt
 
   #<<include ideogram.label.conf>>
 
-  show_label        = yes 
+  show_label        = no 
 
 
   # show labels only for contigs 1-10and
 
   # use the chromosome name as the label
   
-  label_format     = eval( var(chr) =~ /Scaffold_[1-10]$/ ? var(label) : "")
+ # label_format     = eval( var(chr) =~ /Scaffold_[1-10]$/ ? var(label) : "")
+  #label_format = eval(sprintf("chr%s",var(label)))
+  label_color    = gpos
+
+  #label_radius = (dims(ideogram,radius_inner)+dims(ideogram,radius_outer))/2-24
   
-  label_color    = gneg
-
-  # 5% of inner radius outside outer ideogram radius
-
-  label_radius = dims(ideogram,radius_outer) + 0.15r
-
   label_size        = 20p
 
   label_font        = bold
@@ -152,7 +153,6 @@ karyotype = /home/khajdu/git_repos/circos/final_karyotype.txt
   label_parallel    = yes
 
 
-  # ideogram cytogenetic bands, if defined in the karyotype file
 
   # <<include bands.conf>>
 
@@ -200,7 +200,6 @@ chromosomes_color = Scaffold_1531=chr6, Scaffold_19=chr6, Scaffold_1533=chr6, Sc
 
 <<include etc/housekeeping.conf>> # included from Circos distribution
 
-#<<include /home/jconnell/git_repos/scripts/Fv_C-variants/Circos/At_vs_As_ticks.conf>>
 
 <plots>
 <plot>
@@ -210,19 +209,42 @@ file = /home/khajdu/git_repos/circos/dart3col
 layers = 1
 thickness = 20
 margin = 0.02u
-color = chr18
-fill_color = chr19
-r0 = 0.50r
-r1 = 0.60r
-stroke_color = chr195 
+color = chr19
+fill_color = lpurple
+r0 = 0.33r
+r1 = 0.43r
+stroke_color = lpurple 
 </plot>
 
+<plot>
+type  = histogram
+min = 0
+max = 150
+file = /home/khajdu/git_repos/circos/newDArT5000000bp_window.vcf
+color        = dpurple
+fill_color   = dpurple
+orientation  = in
+r0           = 0.44r
+r1           = 0.54r
+</plot>
+
+<plot>
+type  = histogram
+min = 0
+max = 100
+file = /home/khajdu/git_repos/circos/oldDArT5000000bp_window.vcf
+color        = chr20
+fill_color   = chr20
+orientation  = out
+r0           = 0.54r
+r1           = 0.64r
+</plot>
 
 <plot>
 type  = histogram
 min = 0
 max = 15000
-file = /home/khajdu/git_repos/circos/S15000000bp_window.vcf
+file = /home/khajdu/git_repos/circos/S15Mbp_window.vcf
 color        = chr7
 fill_color   = chr7
 orientation  = in
@@ -235,7 +257,7 @@ r1           = 0.80r
 type  = histogram
 min = 0
 max = 15000
-file  = /home/khajdu/git_repos/circos/S35000000bp_window.vcf
+file  = /home/khajdu/git_repos/circos/S35Mbp_window.vcf
 thickness    = 1
 color        = dblue
 fill_color   = dblue
@@ -256,36 +278,65 @@ r0 = 1.00r
 r1 = 1.20r
 </plot>
 
+#<plot>
+#show  = yes
+#type  = scatter
+#file  = /home/khajdu/git_repos/circos/res5Mbp.txt
+#r1    = 0.99r
+#r0    = 0.95r
+#max   = 100
+#min   = 0
+#glyph = circle
+#glyph_size = 5
+#color = chr14
+#stroke_color = chr14
+#stroke_thickness = 1
+#</plot>
+
 <plot>
 show  = yes
-type  = scatter
-file  = /home/khajdu/git_repos/circos/testpoint
-r1    = 0.99r
-r0    = 0.99r
-max   = 1.0
-min   = 0.0
-glyph = triangle
-glyph_size = 18
-color = chr14
-stroke_color = chr14
-stroke_thickness = 1
+type  = histogram
+file  = /home/khajdu/git_repos/circos/res5Mbp.txt
+r1    = 1.20r
+r0    = 1.00r
+max   = 100
+min   = 0
+color = lgreen
+fill_color = lgreen
+thickness = 1
 </plot>
+
 
 <plot>
 show  = yes
 type  = scatter
 file  = /home/khajdu/git_repos/circos/test_col_darts
-r1    = 0.96r
-r0    = 0.96r
+r1    = 0.97r
+r0    = 0.97r
 max   = 1.0
 min   = 0.0
 glyph = triangle
-glyph_size = 18
+glyph_size = 17
 #scolor = chrna
 stroke_color = gneg
 stroke_thickness = 1
 </plot>
 
 
+<plot>
+type             = text
+color            = black
+file = /home/khajdu/git_repos/circos/circos_scaffold_labels.txt
+
+r0 = 0.23r
+r1 = 0.33r
+
+label_size   = 20p
+label_font   = bold
+
+padding  = 0p
+rpadding = 0p
+
+</plot>
 </plots>
 
