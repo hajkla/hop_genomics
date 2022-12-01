@@ -365,6 +365,17 @@ bcftools view -e 'GT="./." & GT="0/0"' S3_filtered_snps.vcf > s3variant_hq.vcf
 awk -F' ' '$6 == "./."' filtered_S1S3_genotypeinfo.txt > S3_filtered_snps.txt
 awk -F' ' '$7 == "./."' filtered_S1S3_genotypeinfo.txt > S1_filtered_snps.txt
 awk -F' ' '$7 != "./." && $6 != "./."' filtered_S1S3_genotypeinfo.txt > S1S3_shared_snps.txt
+awk -F' ' '$7 != "0/0" && $6 != "0/0"' S1S3_shared_snps.txt > shared
+wc -l shared
+
+1002669 shared (between s1 ands3)
+
+# SNPs only present in one parent
+
+awk -F' ' '$7 == "./."' filtered_S1S3_genotypeinfo.txt > misss3
+awk -F' ' '$6 == "./."' filtered_S1S3_genotypeinfo.txt > misss1
+82679 misss3
+63467 misss1
 
 #make files with only snp position info for circos
 more S1_filtered_snps.txt| sed 's/ /\t/g' | grep 'Scaffold' | cut -f 1,2 > S1snps_circos.txt
