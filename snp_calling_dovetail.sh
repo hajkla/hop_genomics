@@ -377,6 +377,20 @@ awk -F' ' '$6 == "./."' filtered_S1S3_genotypeinfo.txt > misss1
 82679 misss3
 63467 misss1
 
+# no calls and no snps counts in pilgrim and 316
+(sambcfenv) wc -l s3_nocalls.txt
+82679 s3_nocalls.txt
+(sambcfenv) wc -l s1_nocalls.txt
+63467 s1_nocalls.txt
+(sambcfenv) awk -F' ' '$7 == "0/0"' filtered_S1S3_genotypeinfo.txt > s3_nosnp.txt
+(sambcfenv) awk -F' ' '$6 == "0/0"' filtered_S1S3_genotypeinfo.txt > s1_nosnp.txt
+(sambcfenv) wc -l s1_nosnp.txt
+640766 s1_nosnp.txt
+(sambcfenv) wc -l s3_nosnp.txt
+1010526 s3_nosnp.txt
+(sambcfenv)
+
+
 #make files with only snp position info for circos
 more S1_filtered_snps.txt| sed 's/ /\t/g' | grep 'Scaffold' | cut -f 1,2 > S1snps_circos.txt
 more S3_filtered_snps.txt| sed 's/ /\t/g' | grep 'Scaffold' | cut -f 1,2 > S3snps_circos.txt
